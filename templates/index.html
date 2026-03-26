@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+  <title>DataPois</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+</head>
+<body>
+
+<header class="main-header">
+  <h1>🧠 Data Poisoning Detector</h1>
+  <p>Detect and classify data integrity attacks instantly.</p>
+</header>
+
+<div class="wrapper">  
+<!-- This is the decision making mechanism -->
+<div class="form-container">
+
+<div class="form-group">
+    <div class="upload-header">Choose Input Method</div>
+    <div class="upload-subheader">Select how you'd like to provide your data:</div>
+
+    <div class="radio-group">
+      <label><input type="radio" name="optional" value="file" checked onchange="toggleForms()"> File Upload</label>
+      <label><input type="radio" name="optional" value="data" onchange="toggleForms()"> Data Input</label>
+    </div>
+</div>
+
+</div>
+<!-- This is the file upload form-->
+    <div class="upload-container"  id="file-upload">
+        <div class="upload-header">📂 Upload CSV Files</div>
+        
+        <form id="uploadForm" enctype="multipart/form-data">
+        
+        <div class="drop-area" id="drop-area">
+            <div class="drop-text">Drag and drop here</div>
+            <div class="or-divider">OR</div>
+            <label class="browse-btn">
+                Browse files
+                <input type="file" id="fileInput" multiple hidden>
+            </label>
+        </div>
+        
+        <button class="upload-btn">Upload Files</button>
+        </form>
+        <div class="file-list"></div>
+
+  <!-- Upload status -->
+  <div id="upload-status" class="status-box">
+    <span class="status-text">Waiting for upload...</span>
+    <div class="spinner"></div>
+  </div>
+
+        <!--Results-->
+    <div class="results-container" id="data-results-container">
+      <h3>Analysis Results</h3>
+      <pre id="results"></pre>
+      <button id="download" class="download-btn" >⬇️ Download Results</button>
+    </div>
+
+    </div>
+
+  
+<!-- This is the data input metric-->
+<div class="data-input-container" id="data-input">
+  <div class="upload-header">💬 Text Data Input</div>
+  <div class="upload-subheader">Manually enter or paste data</div>
+  <form>
+  <!-- Separator input -->
+  <label for="separator">Separator:</label>
+  <input type="text" id="separator" name="separator" placeholder="e.g., ; or |" maxlength="1">
+
+  <!-- Column names input -->
+  <label for="columns">Column names (separated by your separator):</label>
+  <textarea id="columns" name="columns" rows="2" cols="50" placeholder="..."></textarea>
+
+  <!-- Data input -->
+  <label for="message">Data row(s):</label>
+  <textarea id="message" name="message" rows="4" cols="50" placeholder="Enter your data here, use the separator you specified"></textarea>
+
+  <button class="upload-btn" id="upload-text-btn">Upload Data</button>
+  </form>
+
+  <!-- Upload status -->
+  <div id="input-upload-status" class="status-box">
+    <span class="status-text">Waiting for upload...</span>
+    <div class="spinner"></div>
+  </div>
+ 
+  <!-- Results -->
+  <div class="input-results-container" id="input-results-container">
+    <h3>Analysis Results</h3>
+    <pre id="input-results"></pre>
+    <button id="download" class="download-btn" >⬇️ Download Results</button>
+
+  </div>
+</div>
+
+
+</div> 
+
+<footer>
+  <p>© 2025  Data Poisoning Detector | Built with Flask ⚡</p>
+</footer>
+
+<script>
+
+let latestFileAnalysisData = null;
+let latestInputAnalysisData = null;
+
+  function toggleForms() {
+    const selectedValue = document.querySelector('input[name="optional"]:checked').value;
+
+    // Hide all forms
+    document.querySelectorAll('.upload-container, .data-input-container').forEach(form => {
+      form.style.display = 'none';
+    });
+
+    // Show the selected form
+    if (selectedValue === 'file') {
+      document.querySelector('.upload-container').style.display = 'block';
+    } else if (selectedValue === 'data') {
+      document.querySelector('.data-input-container').style.display = 'block';
+    }
+  }
+
+  // Set correct form visibility on page load
+  window.onload = toggleForms;
+
+
+const fileInput = document.getElementById('fileInput');
+const fileList = document.querySelector('.file-list');
+
+fileInput.addEventListener('change', () => {
+  fileList.innerHTML = '';
+  for (let i = 0; i < fileInput.files.length; i++) {
+    const fileItem = document.createElement('div');
+    fileItem.textContent = fileInput.files[i].name;
+    fileList.appendChild(fileItem);
+  }
+});
+
+
+const dropArea = document.getElementById('drop-area');
+
+// Prevent default behaviors on drag events
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, e => e.preventDefault());
+  dropArea.addEventListener(eventName, e => e.stopPropagation());
+});
+
+// Add highlighting
+['dragenter', 'dragover'].forEach(eventName => {
+  dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'));
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'));
+});
+
+// Handle dropped files
+dropArea.addEventListener('drop', (e) => {
+  const files = e.dataTransfer.files;
+  handleFiles(files);
+});
+
+// Handle input change too
+fileInput.addEventListener('change', () => {
+  handleFiles(fileInput.files);
+});
+
+// Function to show file names
+function handleFiles(files) {
+  fileList.innerHTML = '';
+  for (let i = 0; i < files.length; i++) {
+    const fileItem = document.createElement('div');
+    fileItem.textContent = files[i].name;
+    fileList.appendChild(fileItem);
+  }
+}
+
+document.querySelector('.upload-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+
+    const files = document.getElementById('fileInput').files;
+    const formData = new FormData();
+
+    if (files.length === 0) {
+        alert("Please select at least one file.");
+        return;
+    }
+
+    for (let i = 0; i < files.length; i++) {
+        formData.append('files[]', files[i]);
+    }
+
+     // === Create or select status box ===
+    let statusBox = document.getElementById('upload-status');
+    if (!statusBox) {
+        statusBox = document.createElement('div');
+        statusBox.id = 'upload-status';
+        statusBox.classList.add('status-box', 'loading');
+        statusBox.innerHTML = `<span class="status-text">⏳ Analyzing files...</span><div class="spinner"></div>`;
+        document.querySelector('.upload-container').prepend(statusBox);
+    } else {
+        statusBox.className = 'status-box loading';
+        statusBox.innerHTML = `<span class="status-text">⏳ Analyzing files...</span><div class="spinner"></div>`;
+    }
+
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Upload failed");
+        } // if the response is not ok then it throws this custom error
+        return response.json();  // expect JSON back from Flask
+    })
+
+    .then(data => {
+        // Update status box → success
+        statusBox.classList.remove('loading');
+        statusBox.classList.add('success');
+        statusBox.innerHTML = `<span class="status-text">✅ Analysis complete!</span>`;
+        latestFileAnalysisData = data;
+        
+        // Format results — handle both array or object cases
+        const resultsEl = document.getElementById("results");
+        resultsEl.innerHTML = "";
+
+        
+        if (data.all_results && Array.isArray(data.all_results)) {
+            data.all_results.forEach(fileResult => {
+        // Create a container for each file
+        const fileSection = document.createElement("div");
+        fileSection.classList.add("file-section");
+
+        // File title
+        const fileTitle = document.createElement("h4");
+        fileTitle.classList.add("file-title");
+        fileTitle.innerText = `File: ${fileResult.file}`;
+        fileSection.appendChild(fileTitle);
+
+        //Iterate each model
+        for (let [model, modelData] of Object.entries(fileResult.results)) {
+        // Create container for each model
+            const modelSection = document.createElement("div");
+            modelSection.classList.add("model-section");
+
+        // Model Title
+            const title = document.createElement("h4");
+            title.classList.add("model-title");
+            title.innerText = `${model} Model Results`;
+            modelSection.appendChild(title);
+
+        // Metrics (keep your percentages)
+            const list = document.createElement("ul");
+            list.classList.add("results-list");
+            for (let [attack, pct] of Object.entries(modelData.results)) {
+                const item = document.createElement("li");
+                item.innerHTML = `<span class="attack">${attack}</span>: <span class="pct">${pct}%</span>`;
+               list.appendChild(item);
+            }
+            modelSection.appendChild(list);
+
+        // Model-level classification metric
+            const final = document.createElement("p");
+            final.classList.add("final-class");
+            final.innerHTML = `<strong>Dataset classified as:</strong> <span class="classification">${modelData.final_classification || 'Unknown'}</span>`;
+            modelSection.appendChild(final);
+
+        // Append this model's section
+            fileSection.appendChild(modelSection);
+
+      
+    }
+
+    // === Summary Metrics (keep your overall analysis metric) ===
+        const summarySection = document.createElement("div");
+        summarySection.classList.add("summary-section");
+        summarySection.innerHTML = `
+        <h4 class="summary-title">Overall Analysis Summary</h4>
+        <p><strong>Final Classification:</strong> <span class="classification">${fileResult.final_classification || 'Unknown'}</span></p>
+       `;
+       fileSection.appendChild(summarySection)
+
+       resultsEl.appendChild(fileSection);
+    });
+} else {
+    resultsEl.innerHTML = "<p>No results found.</p>";
+}
+
+
+
+document.getElementById("data-results-container").style.display = "block";
+    })
+.catch(error => {
+    // Comprehensive error handling
+    console.error('Upload error:', error);
+    
+    statusBox.classList.remove('loading');
+    console.error('Error during upload:', error.message);
+    
+    // Update status box → error
+    statusBox.classList.remove('loading');
+    statusBox.classList.add('error');
+    
+    if (error.message === "Upload failed") {
+        statusBox.innerHTML = `<span class="status-text">❌ Upload failed. Please try again.</span>`;
+    } else {
+        statusBox.innerHTML = `<span class="status-text">❌ Error: ${error.message}</span>`;
+    }
+});
+    
+});
+  
+
+
+//upload file data
+document.querySelector('#data-input .upload-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+
+    const separator = document.getElementById('separator').value.trim();
+    const columnsRaw = document.getElementById('columns').value.trim();
+    const messageRaw = document.getElementById('message').value.trim();
+
+    if (!separator || !columnsRaw || !messageRaw) {
+        alert("Please enter separator, column names, and data.");
+        return;
+    }
+
+    // Split columns and rows
+    const columns = columnsRaw.split(separator).map(c => c.trim());
+    const rows = messageRaw.split('\n').map(line => line.split(separator).map(v => v.trim()));
+
+    // Optional: Validate that each row has same number of values as columns
+    for (let i = 0; i < rows.length; i++) {
+        if (rows[i].length !== columns.length) {
+            alert(`Row ${i+1} has ${rows[i].length} values but expected ${columns.length}.`);
+            return;
+        }
+    }
+
+    const payload = {
+        separator: separator,
+        columns: columns,
+        data: rows
+    };
+
+     let statusBox = document.getElementById('input-upload-status');
+
+    if (!statusBox) {
+        statusBox = document.createElement('div');
+        statusBox.id = 'input-upload-status';
+        statusBox.classList.add('status-box', 'loading');
+        statusBox.innerHTML = `<span class="status-text">⏳ Analyzing data...</span><div class="spinner"></div>`;
+        document.querySelector('.data-input-container').prepend(statusBox);
+    } else {
+        statusBox.className = 'status-box loading';
+        statusBox.innerHTML = `<span class="status-text">⏳ Analyzing data...</span><div class="spinner"></div>`;
+    }
+  
+
+    fetch('/save-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+
+        latestInputAnalysisData = data;
+
+        statusBox.classList.remove('loading');
+        if (data.error) {
+            statusBox.classList.add('error');
+            statusBox.innerHTML = `<span class="status-text">❌ Analysis failed</span>`;
+            alert(data.error);
+            return;
+        }
+        else{
+        statusBox.classList.add('success');
+        statusBox.innerHTML = `<span class="status-text">✅ Analysis complete!</span>`;
+        }
+        // Clear inputs
+        document.getElementById('message').value = '';
+        document.getElementById('columns').value = '';
+        document.getElementById('separator').value = '';
+
+        // Format results exactly like file upload
+        const resultsEl = document.getElementById("input-results");
+        resultsEl.innerHTML = "";
+
+        if (data.results && typeof data.results === "object") {
+            for (let [model, modelData] of Object.entries(data.results)) {
+                const modelSection = document.createElement("div");
+                modelSection.classList.add("model-section");
+
+                const title = document.createElement("h4");
+                title.classList.add("model-title");
+                title.innerText = `${model} Model Results`;
+                modelSection.appendChild(title);
+
+                const list = document.createElement("ul");
+                list.classList.add("results-list");
+                for (let [attack, pct] of Object.entries(modelData.results)) {
+                    const item = document.createElement("li");
+                    item.innerHTML = `<span class="attack">${attack}</span>: <span class="pct">${pct}%</span>`;
+                    list.appendChild(item);
+                }
+                modelSection.appendChild(list);
+
+                const final = document.createElement("p");
+                final.classList.add("final-class");
+                final.innerHTML = `<strong>Dataset classified as:</strong> <span class="classification">${modelData.final_classification || 'Unknown'}</span>`;
+                modelSection.appendChild(final);
+
+                resultsEl.appendChild(modelSection);
+            }
+
+            const summarySection = document.createElement("div");
+            summarySection.classList.add("summary-section");
+            summarySection.innerHTML = `
+                <h4 class="summary-title">Overall Analysis Summary</h4>
+                <p><strong>Final Classification:</strong> <span class="classification">${data.final_classification || 'Unknown'}</span></p>
+            `;
+            resultsEl.appendChild(summarySection);
+        }
+
+        document.getElementById("input-results-container").style.display = "block";
+
+
+    })
+    .catch(error => {
+    // Comprehensive error handling
+    console.error('Upload error:', error);
+    
+    statusBox.classList.remove('loading');
+    console.error('Error during upload:', error.message);
+    
+    // Update status box → error
+    statusBox.classList.remove('loading');
+    statusBox.classList.add('error');
+    
+    if (error.message === "Upload failed") {
+        statusBox.innerHTML = `<span class="status-text">❌ Upload failed. Please try again.</span>`;
+    } else {
+        statusBox.innerHTML = `<span class="status-text">❌ Error: ${error.message}</span>`;
+    }
+});
+});
+
+
+  
+// Select all download buttons
+
+const PDFGenerator = {
+    // Simple PDF Report for file uploads
+    generateFilePDF(data, filename = 'analysis-report.pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Title
+        doc.setFontSize(20);
+        doc.setTextColor(40, 40, 150);
+        doc.text('HoneyPot: DataPois Analysis Results', 105, 20, { align: 'center' });
+        
+        // Subtitle
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 30, { align: 'center' });
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, 35, 190, 35);
+        
+        let yPosition = 45;
+        
+        // Process each file
+        if (data.all_results && Array.isArray(data.all_results)) {
+            data.all_results.forEach((fileResult, fileIndex) => {
+                // File header
+                doc.setFontSize(14);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`File ${fileIndex + 1}: ${fileResult.file}`, 20, yPosition);
+                yPosition += 10;
+                
+                // Model results
+                doc.setFontSize(12);
+                for (let [model, modelData] of Object.entries(fileResult.results)) {
+                    doc.text(`${model} Model:`, 25, yPosition);
+                    yPosition += 7;
+                    
+                    for (let [attack, pct] of Object.entries(modelData.results)) {
+                        doc.text(`  ${attack}: ${pct}%`, 30, yPosition);
+                        yPosition += 7;
+                    }
+                    
+                    doc.text(`Classification: ${modelData.final_classification || 'Unknown'}`, 30, yPosition);
+                    yPosition += 10;
+                }
+                
+                // Overall classification
+                doc.setFontSize(12);
+                doc.setTextColor(0, 100, 0);
+                doc.text(`Overall: ${fileResult.final_classification || 'Unknown'}`, 20, yPosition);
+                yPosition += 15;
+                
+                // Add page if needed
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+            });
+        }
+        
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Confidential Report - Generated by HoneyPot: DataPois', 105, 280, { align: 'center' });
+        
+        // Save the PDF
+        doc.save(filename);
+    },
+    
+    // PDF for text/data input
+    generateDataPDF(data, filename = 'data-analysis-report.pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Title
+        doc.setFontSize(20);
+        doc.setTextColor(40, 40, 150);
+        doc.text('Data Input Analysis Results', 105, 20, { align: 'center' });
+        
+        // Subtitle
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 30, { align: 'center' });
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, 35, 190, 35);
+        
+        let yPosition = 45;
+        
+        // For text input results
+        if (data.results && typeof data.results === "object") {
+            for (let [model, modelData] of Object.entries(data.results)) {
+                // Model header
+                doc.setFontSize(14);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`${model} Model:`, 20, yPosition);
+                yPosition += 10;
+                
+                // Attack results
+                doc.setFontSize(12);
+                for (let [attack, pct] of Object.entries(modelData.results)) {
+                    doc.text(`  ${attack}: ${pct}%`, 25, yPosition);
+                    yPosition += 7;
+                }
+                
+                // Classification
+                doc.text(`Classification: ${modelData.final_classification || 'Unknown'}`, 25, yPosition);
+                yPosition += 15;
+                
+                // Add page if needed
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+            }
+            
+            // Overall classification
+            if (data.final_classification) {
+                doc.setFontSize(14);
+                doc.setTextColor(0, 100, 0);
+                doc.text(`Overall Classification: ${data.final_classification}`, 20, yPosition);
+                yPosition += 15;
+            }
+        }
+        
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Confidential Report - Generated by HoneyPot: DataPois', 105, 280, { align: 'center' });
+        
+        // Save the PDF
+        doc.save(filename);
+    }
+};
+
+
+document.getElementById("download").addEventListener("click", () => {
+    // Decide which PDF to generate
+    if (latestFileAnalysisData) {
+        PDFGenerator.generateFilePDF(latestFileAnalysisData);
+    } else if (latestInputAnalysisData) {
+        PDFGenerator.generateDataPDF(latestInputAnalysisData);
+    } else {
+        alert("No analysis data available to download yet.");
+    }
+});
+
+</script>
+
+</body>
+</html>

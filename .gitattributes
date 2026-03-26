@@ -1,0 +1,2 @@
+*.pkl filter=lfs diff=lfs merge=lfs -text
+models/attack_detector.pkl filter=lfs diff=lfs merge=lfs -text

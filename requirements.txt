@@ -1,0 +1,8 @@
+flask
+gunicorn
+pandas
+joblib
+scikit-learn
+Counter
+kmodes
+xgboost
