@@ -102,7 +102,7 @@ This is a research project and will be changed as the research progresses.
 
 ## Contact
 
-Lesego Senamela - [GitHub Profile](https://github.com/LesegoSenamela) • [LinkedIn](https://www.linkedin.com/in/lesegosenamela) • Email: senamelalesego@gmail.com
+Lesego Senamela - [GitHub Profile](https://github.com/LesegoSenamela) • [LinkedIn](https://www.linkedin.com/in/lesegosenamela) • [Email](senamelalesego@gmail.com)
 
 
 
