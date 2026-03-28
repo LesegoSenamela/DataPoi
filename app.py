@@ -12,13 +12,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
-
-kmeans = joblib.load('models/kmeans.pkl')
-kmodes = joblib.load('models/kmodes.pkl')
-rand_for = joblib.load('models/attack_detector.pkl')
-xgb_clf = joblib.load('models/xgb_attack_detector.pkl')
-
-
 label_map = {
     0: "Clean",
     1: "Label Flipping",
@@ -96,12 +89,16 @@ def upload_files():
         model_predictions = {}
 
         if 'KMeans' in selected_models:
+            kmeans = joblib.load('models/kmeans.pkl')
             model_predictions['KMeans'] = kmeans.predict(new_data)
         if 'KMode' in selected_models:
+            kmodes = joblib.load('models/kmodes.pkl')
             model_predictions['KMode'] = kmodes.fit_predict(new_data)
         if 'RandomForest' in selected_models:
+            rand_for = joblib.load('models/attack_detector.pkl')
             model_predictions['RandomForest'] = rand_for.predict(new_data)
         if 'XGBoost' in selected_models:
+            xgb_clf = joblib.load('models/xgb_attack_detector.pkl')
             model_predictions['XGBoost'] = xgb_clf.predict(new_data)
 
         # Analyze and summarize model results
@@ -179,12 +176,16 @@ def save_text():
         # Run models
         model_predictions = {}
         if 'KMeans' in selected_models:
+            kmeans = joblib.load('models/kmeans.pkl')
             model_predictions['KMeans'] = kmeans.predict(df)
         if 'KMode' in selected_models:
+            kmodes = joblib.load('models/kmodes.pkl')
             model_predictions['KMode'] = kmodes.fit_predict(df)
         if 'RandomForest' in selected_models:
+            rand_for = joblib.load('models/attack_detector.pkl')
             model_predictions['RandomForest'] = rand_for.predict(df)
         if 'XGBoost' in selected_models:
+            xgb_clf = joblib.load('models/xgb_attack_detector.pkl')
             model_predictions['XGBoost'] = xgb_clf.predict(df)
 
         # Analyze results
