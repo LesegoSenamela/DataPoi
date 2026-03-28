@@ -2,7 +2,8 @@ flask
 gunicorn
 pandas
 joblib
-scikit-learn
+scikit-learn==1.6.1
 Counter
 kmodes
 xgboost
+numpy==1.26.4
