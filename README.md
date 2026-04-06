@@ -19,6 +19,12 @@ DataPoi is a web-based data analysis tool that provides an interactive platform 
 - Python 3.11+
 - pip package manager
 - Docker (optional, for containerized deployment)
+### Live Deployment
+
+Link -> 
+```bash
+https://datapois.onrender.com 
+```
 
 ### Local Installation
 
