@@ -21,10 +21,8 @@ DataPoi is a web-based data analysis tool that provides an interactive platform 
 - Docker (optional, for containerized deployment)
 ### Live Deployment
 
-Link -> 
-```bash
-https://datapois.onrender.com 
-```
+Link -> [Live Demo](https://datapois.onrender.com)
+
 
 ### Local Installation
 
