@@ -70,7 +70,7 @@ DataPoi/
 ├── app.py             # Main Flask application
 ├── requirements.txt   # Python dependencies
 ├── Dockerfile         # Docker configuration
-├── models/            # Data models and processing logic
+├── models/            # Machine Learning Models
 ├── static/            # Static files (CSS, JS, images)
 │   └── styles.css     # Stylesheet
 └── templates/         # HTML templates
