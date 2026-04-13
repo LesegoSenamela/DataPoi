@@ -112,6 +112,8 @@
 
 let latestFileAnalysisData = null;
 let latestInputAnalysisData = null;
+let selectedFiles = [];
+
 
   function toggleForms() {
     const selectedValue = document.querySelector('input[name="optional"]:checked').value;
@@ -181,7 +183,34 @@ function handleFiles(files) {
     const fileItem = document.createElement('div');
     fileItem.textContent = files[i].name;
     fileList.appendChild(fileItem);
+    selectedFiles = Array.from(files); // store files in array
+    renderFiles();
   }
+}
+
+function renderFiles() {
+  fileList.innerHTML = '';
+
+  selectedFiles.forEach((file, index) => {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'file-item';
+
+    const fileName = document.createElement('span');
+    fileName.textContent = file.name;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '✕';
+    removeBtn.className = 'remove-btn';
+
+    removeBtn.onclick = () => {
+      selectedFiles.splice(index, 1); // remove file
+      renderFiles(); // refresh UI
+    };
+
+    fileItem.appendChild(fileName);
+    fileItem.appendChild(removeBtn);
+    fileList.appendChild(fileItem);
+  });
 }
 
 document.querySelector('.upload-btn').addEventListener('click', (e) => {
@@ -195,9 +224,9 @@ document.querySelector('.upload-btn').addEventListener('click', (e) => {
         return;
     }
 
-    for (let i = 0; i < files.length; i++) {
-        formData.append('files[]', files[i]);
-    }
+    selectedFiles.forEach(file => {
+    formData.append('files[]', file);
+    });
 
      // === Create or select status box ===
     let statusBox = document.getElementById('upload-status');
