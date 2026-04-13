@@ -365,3 +365,32 @@ footer {
 .download-btn:hover {
   background-color: #1e50a7;
 }
+
+/*This is the button to remove the files from the list of uploaded files*/
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eee;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+}
+
+.file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remove-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: red;
+}
+
+.remove-btn:hover {
+  color: darkred;
+}
